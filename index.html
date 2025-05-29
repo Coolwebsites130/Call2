@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QuickVoice</title>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <style>
+    body {
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #00ffff;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔊 QuickVoice</h1>
+  <input id="code" placeholder="Enter Call Code (e.g. chill123)">
+  <button onclick="startCall()">Join Voice</button>
+  <div id="status">Waiting...</div>
+
+  <script>
+    const status = document.getElementById("status");
+    const codeInput = document.getElementById("code");
+    let localStream;
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      localStream = stream;
+    });
+
+    function startCall() {
+      const code = codeInput.value;
+      if (!code) return alert("Type a code fam.");
+
+      const peer = new Peer(code);
+      peer.on('open', id => {
+        status.innerText = `✅ Ready. Waiting for someone to connect to "${code}"...`;
+      });
+
+      peer.on('call', call => {
+        call.answer(localStream);
+        call.on('stream', remoteStream => {
+          playAudio(remoteStream);
+          status.innerText = "🎤 You're connected!";
+        });
+      });
+
+      const friend = new Peer();
+      friend.on('open', id => {
+        const call = friend.call(code, localStream);
+        call.on('stream', remoteStream => {
+          playAudio(remoteStream);
+          status.innerText = "🎤 You're connected!";
+        });
+      });
+    }
+
+    function playAudio(stream) {
+      const audio = new Audio();
+      audio.srcObject = stream;
+      audio.play();
+    }
+  </script>
+</body>
+</html>
